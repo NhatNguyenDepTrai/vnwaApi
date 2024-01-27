@@ -7,8 +7,8 @@ use App\Models\Company;
 use App\Models\Brand;
 use App\Models\Project;
 use App\Models\CategoryProject;
+use App\Models\ListSlug;
 use Illuminate\Auth\Events\Validated;
-use Google\Recaptcha\Recaptcha;
 class ClientController extends Controller
 {
     function getDataCompany()
@@ -43,11 +43,7 @@ class ClientController extends Controller
     }
     function submitContact(Request $request)
     {
-        $recaptcha = new ReCaptcha(env('RECAPTCHA_SECRET_KEY'));
-        $response = $recaptcha->verify($request->input('recaptcha_token'), $request->ip());
-
-        if (!$response->isSuccess()) {
-            // Xử lý khi reCAPTCHA không hợp lệ
+        if (!$request->token) {
             return response()->json(['error' => 'reCAPTCHA verification failed'], 422);
         }
 
@@ -77,5 +73,10 @@ class ClientController extends Controller
         );
 
         return response()->json($request);
+    }
+    function checkSlugTable($slug)
+    {
+        $data = ListSlug::where('slug', $slug)->first();
+        return response()->json($data);
     }
 }
