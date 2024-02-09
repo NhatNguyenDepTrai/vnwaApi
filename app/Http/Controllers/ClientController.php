@@ -8,7 +8,12 @@ use App\Models\Brand;
 use App\Models\Project;
 use App\Models\CategoryProject;
 use App\Models\ListSlug;
+use App\Models\Contact;
 use Illuminate\Auth\Events\Validated;
+use Mail;
+use App\Mail\VerifyContact;
+use App\Mail\MailAdminContact;
+
 class ClientController extends Controller
 {
     function getDataCompany()
@@ -17,18 +22,27 @@ class ClientController extends Controller
     }
     function getDataBrands()
     {
-        $data = Brand::where('status', 1)
-            ->where('highlight', 1)
-            ->orderBy('ord', 'ASC')
-            ->get();
+        try {
+            $data = Brand::where('status', 1)
+                ->where('highlight', 1)
+                ->orderBy('ord', 'ASC')
+                ->get();
+        } catch (\Throwable $th) {
+            return response()->json('error', 'Có lỗi xảy ra');
+        }
+
         return response()->json($data);
     }
     function getDataTopProject()
     {
-        $data = Project::where('status', 1)
-            ->where('highlight', 1)
-            ->orderBy('ord', 'ASC')
-            ->get(['name', 'slug', 'id_category_project', 'url_avatar', 'url_avatar_mobile', 'desc']);
+        try {
+            $data = Project::where('status', 1)
+                ->where('highlight', 1)
+                ->orderBy('ord', 'ASC')
+                ->get(['name', 'slug', 'id_category_project', 'url_avatar', 'url_avatar_mobile', 'desc']);
+        } catch (\Throwable $th) {
+            return response()->json('error', 'Có lỗi xảy ra');
+        }
         foreach ($data as $key => $value) {
             $value->cate_name = CategoryProject::find($value->id_category_project)->name;
         }
@@ -43,9 +57,9 @@ class ClientController extends Controller
     }
     function submitContact(Request $request)
     {
-        if (!$request->token) {
-            return response()->json(['error' => 'reCAPTCHA verification failed'], 422);
-        }
+        // if (!$request->token) {
+        //     return response()->json(['error' => 'reCAPTCHA verification failed'], 422);
+        // }
 
         $this->validate(
             $request,
@@ -71,8 +85,41 @@ class ClientController extends Controller
                 'note.max' => 'Tối đa 500 kí tự!',
             ],
         );
+        try {
+            Contact::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'budget' => $request->budget,
+                'note' => $request->note,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => 'Có Lỗi Xảy Ra, Vui Lòng Thử Lại'], 200);
+        }
 
-        return response()->json($request);
+        $company = Company::find(1);
+        $mailClientData = [
+            'title' => 'Xin chào ' . $request->name,
+            'mess' => 'Chúng tôi đã nhận được yêu cầu của bạn, chúng tôi sẽ liên hệ lại bạn sau ít phút.',
+            'bg_header' => '#999',
+            'nameCompany' => $company->short_name,
+            'url_avatar' => $company->url_avatar_full,
+            'url_website' => $company->website,
+            'hotline' => $company->url_avatar_full,
+        ];
+        Mail::to($request->email)->send(new VerifyContact($mailClientData));
+
+        $mailAdminContactData = [
+            'url_avatar' => $company->url_avatar_full,
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'budget' => $request->budget,
+            'note' => $request->note,
+        ];
+        Mail::to($company->mail)->send(new MailAdminContact($mailAdminContactData));
+
+        return response()->json(['success' => 'Gửi Liên Hệ Thành Công!'], 200);
     }
     function checkSlugTable($slug)
     {

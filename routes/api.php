@@ -34,6 +34,7 @@ Route::get('/get-project-in-cate-{slug}', [ProjectController::class, 'getProject
 Route::get('/get-project-{slug}', [ProjectController::class, 'getProject']);
 Route::get('/get-process', [ProcessController::class, 'getProcess']);
 Route::get('/get-data-category-blog', [BlogController::class, 'getDataCategoryBlog']);
+Route::get('/get-list-category-blog-highlight', [BlogController::class, 'getListCategoryBlogHighlight']);
 Route::get('/get-data-all-blog', [BlogController::class, 'getDataAllBlog']);
 Route::get('/get-blog-in-cate-{slug}', [BlogController::class, 'getBlogInCate']);
 Route::get('/get-detail-blog-{slug}', [BlogController::class, 'getDetailBlog']);

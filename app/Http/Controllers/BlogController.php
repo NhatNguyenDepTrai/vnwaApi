@@ -8,6 +8,14 @@ use App\Models\Blog;
 
 class BlogController extends Controller
 {
+    function getListCategoryBlogHighlight()
+    {
+        $data = CategoryBlog::where('status', 1)
+            ->where('highlight', 1)
+            ->get(['name', 'slug']);
+        return response()->json($data, 200);
+    }
+
     function getDataCategoryBlog()
     {
         $data = CategoryBlog::where('status', 1)
